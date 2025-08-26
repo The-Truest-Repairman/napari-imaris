@@ -1,11 +1,13 @@
-name: napari-imaris
+name: imaris
 channels:
   - conda-forge
   - defaults
 dependencies:
+  - napari
   - python=3.10
   - imaris-ims-file-reader
   - pyqt
-  - napari
   - dask
-prefix: /home/brand/miniconda3/envs/napari-imaris
+  - hdf5plugin
+  - napari-imaris-loader
+prefix: /home/brandon/miniconda3/envs/imaris
