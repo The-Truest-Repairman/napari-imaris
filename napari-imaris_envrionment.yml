@@ -1,0 +1,11 @@
+name: napari-imaris
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - bioio
+  - pyqt
+  - napari
+  - dask
+prefix: /home/brand/miniconda3/envs/napari-imaris

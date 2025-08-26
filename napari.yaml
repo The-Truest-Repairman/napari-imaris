@@ -1,0 +1,12 @@
+name: napari-imaris
+display_name: Napari Imaris Reader
+entry_point: napari_imaris
+version: 0.1.0
+napari:
+  commands:
+    - id: napari_imaris.read_ims
+      command: napari_imaris.reader.read_ims
+      title: "Read Imaris (.ims) file"
+      widget:
+        label: "Select an Imaris file"
+        accept: ".ims"
