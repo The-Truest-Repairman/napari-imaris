@@ -71,7 +71,7 @@ def napari_get_reader(path):
 
 if __name__ == "__main__":
     viewer = napari.Viewer()
-    ims_file = "/home/brandon/workspace/local/brandon/napari-imaris/images/BP003_2-3.ims"  # replace with your path
+    ims_file = "../images/NMLNP001-AN6.ims"  # replace with your path
     reader = AsyncImarisDebugReader(ims_file)
 
     # Test async 2D slice: first Z slice
