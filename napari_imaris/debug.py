@@ -1,21 +1,26 @@
 import os
 import numpy as np
 import napari
+import dask as da
 from skimage import img_as_float32
 from imaris_ims_file_reader import ims
 
 # -----------------------------
 # SETTINGS
 # -----------------------------
-#IMS_FILE = "../images/NMLNP001-AN6.ims"
 
+#3D Data sets:
+#IMS_FILE = "../images/NMLNP001-AN6.ims" # 1.07 GB
+IMS_FILE = "/mnt/h/Test data/MesoSpim/Mouse-Thy1-5x-CNS_fused.ims" # 273GB
 #IMS_FILE = "../images/CellDevelopment-time_series3D.ims"
-#IMS_FILE = "../images/SwimmingAlgae_with_objects-time_series2D.ims" #currently does not work for 2D time-series files, but these file types are probably not used a lot
 
+#2D Datasets, currently does not work for 2D time-series files, but these file types are probably not used a lot
+#IMS_FILE = "../images/SwimmingAlgae_with_objects-time_series2D.ims" 
 #IMS_FILE = "../images/MULTI_IMAGE-2D.ims"
 
 USE_ZARR_THRESHOLD_GB = 2
 DEBUG = True
+
 
 # -----------------------------
 # HELPERS
@@ -27,41 +32,51 @@ def debug_print(*args):
     if DEBUG:
         print(*args)
 
-def get_channel_metadata(ims_obj, channel=0):
-    """Return metadata for a channel, including realistic contrast limits"""
-    try:
-        meta = ims_obj.metaData[0, 0, channel]
-        name = meta.get("ChannelName", f"Channel {channel}")
-        scale = meta.get("Resolution", (1.0, 1.0, 1.0))
-    except Exception:
-        name = f"Channel {channel}"
-        scale = (1.0, 1.0, 1.0)
-
-    # Compute contrast limits from actual data in highest-res level
-    data = ims_obj[0, 0, channel, :, :, :]
-    data = img_as_float32(data)  # convert to float for Napari
-    contrast_limits = (float(data.min()), float(data.max()))
-
+def get_channel_metadata(ims_obj, channel=0, time_point=0, resolution_level=0):
+    """Return metadata for a channel, including contrast limits"""
+    meta = ims_obj.metaData[resolution_level, time_point, channel]
+    name = meta.get("ChannelName", f"Channel {channel}")
+    scale = meta.get("resolution", (1.0, 1.0, 1.0))
+    
+    # Compute contrast limits from highest-res level if array is small enough
+    if ims_obj.ResolutionLevels <= 2 and not isinstance(ims_obj, da.Array):
+        data = ims_obj[resolution_level, time_point, channel, :, :, :]
+        data = img_as_float32(data)
+        contrast_limits = (float(data.min()), float(data.max()))
+    else:
+        # For very large Zarr arrays, leave contrast limits as default [0,1]
+        contrast_limits = (0.0, 1.0)
+    
     return {"name": name, "scale": scale, "contrast_limits": contrast_limits}
 
-def build_multiscale(ims_obj, time_point=0):
-    """Returns list of arrays (multiscale pyramid) with shape (channels, z, y, x)"""
+def build_multiscale(ims_obj, time_point=0, use_zarr=False):
+    """
+    Returns a multiscale pyramid: list of arrays (channels, z, y, x)
+    Works for both RAM and Zarr-backed IMS files.
+    """
     multiscale = []
-    for r in range(ims_obj.ResolutionLevels):
-        shape = ims_obj.metaData[r, time_point, 0, "shape"]
-        # Handle 5-element shape (1, Z, Y, X) or 6-element shape
-        if len(shape) >= 5:
-            z, y, x = shape[-3:]
-        else:
-            raise ValueError(f"Unexpected shape: {shape}")
-        debug_print(f"Resolution level {r}, shape={shape}")
 
+    for r in range(ims_obj.ResolutionLevels):
         vol_channels = []
+
         for c in range(ims_obj.Channels):
-            vol = ims_obj[r, time_point, c, :, :, :]
-            vol_channels.append(img_as_float32(vol))
-        vol_channels = np.stack(vol_channels, axis=0)
+            key = (r, time_point, c, slice(None), slice(None), slice(None))
+            arr = ims_obj[key]
+
+            if use_zarr:
+                arr = da.from_array(arr)  # lazy evaluation
+            else:
+                arr = img_as_float32(arr)
+
+            vol_channels.append(arr)
+
+        if use_zarr:
+            vol_channels = da.stack(vol_channels, axis=0)
+        else:
+            vol_channels = np.stack(vol_channels, axis=0)
+
         multiscale.append(vol_channels)
+
     return multiscale
 
 # -----------------------------
@@ -80,7 +95,8 @@ def main():
     base_name = os.path.splitext(os.path.basename(IMS_FILE))[0]
 
     viewer = napari.Viewer()
-    multiscale = build_multiscale(ims_obj, time_point=0)
+
+    multiscale = build_multiscale(ims_obj, time_point=0, use_zarr=use_zarr)
 
     # Per-channel metadata
     channel_names = []
@@ -100,9 +116,6 @@ def main():
         multiscale=True,
         visible=True,
     )
-
-    # Store channel names in metadata dictionary
-    #img_layer.metadata = {"channel_names": channel_names}
 
     debug_print("All channels added. Launching Napari...")
     napari.run()
