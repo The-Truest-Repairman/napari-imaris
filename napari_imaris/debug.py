@@ -7,7 +7,13 @@ from imaris_ims_file_reader import ims
 # -----------------------------
 # SETTINGS
 # -----------------------------
-IMS_FILE = "../images/NMLNP001-AN6.ims"
+#IMS_FILE = "../images/NMLNP001-AN6.ims"
+
+#IMS_FILE = "../images/CellDevelopment-time_series3D.ims"
+#IMS_FILE = "../images/SwimmingAlgae_with_objects-time_series2D.ims" #currently does not work for 2D time-series files, but these file types are probably not used a lot
+
+#IMS_FILE = "../images/MULTI_IMAGE-2D.ims"
+
 USE_ZARR_THRESHOLD_GB = 2
 DEBUG = True
 
