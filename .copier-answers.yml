@@ -1,0 +1,18 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: v1.1.0
+_src_path: https://github.com/napari/napari-plugin-template
+display_name: Imaris file loader
+email: brandonpekarek91@gmail.com
+full_name: Brandon Pekarek
+github_repository_url: https://github.com/The-Truest-Repairman/napari-imaris
+github_username_or_organization: The-Truest-Repairman
+include_reader_plugin: true
+include_sample_data_plugin: false
+include_widget_plugin: true
+include_writer_plugin: true
+install_dependabot: false
+install_precommit: false
+license: BSD-3
+module_name: napari_imaris
+plugin_name: napari-imaris
+short_description: 'A simple plugin for loading imaris (.ims) files '
